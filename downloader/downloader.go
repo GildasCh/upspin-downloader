@@ -38,6 +38,8 @@ func (d *Downloader) Status(ref string) map[string]string {
 		return map[string]string{
 			"URL":      dl.url,
 			"Progress": fmt.Sprintf("%.2f", dl.progress),
+			"Finished": fmt.Sprintf("%v", dl.finished),
+			"Error":    fmt.Sprintf("%v", dl.err),
 		}
 	}
 
@@ -64,30 +66,11 @@ func (d *download) start(out io.WriteCloser) {
 
 	fmt.Printf("response from get %q: %#v\n", d.url, resp)
 
-	buf := make([]byte, 32*1024)
-
-	var err2 error
-	var n int
-	for err != nil && err2 != nil {
-		_, err = resp.Body.Read(buf)
-		if err != nil && err != io.EOF {
-			d.err = err
-			return
-		}
-		n, err2 = out.Write(buf)
-		d.progress += float64(n)
-	}
-
-	fmt.Printf("out of read loop for url %q with errors %v, %v\n", d.url, err, err2)
-
-	if err != nil && err != io.EOF {
+	n, err := io.Copy(out, resp.Body)
+	if err != nil {
 		d.err = err
-		return
-	}
-	if err2 != nil && err2 != io.EOF {
-		d.err = err2
-		return
 	}
 
+	d.progress = float64(n)
 	d.finished = true
 }
