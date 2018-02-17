@@ -66,11 +66,34 @@ func (d *download) start(out io.WriteCloser) {
 
 	fmt.Printf("response from get %q: %#v\n", d.url, resp)
 
-	n, err := io.Copy(out, resp.Body)
+	buf := make([]byte, 32*1024)
+	for {
+		nr, er := resp.Body.Read(buf)
+		if nr > 0 {
+			nw, ew := out.Write(buf[0:nr])
+			if nw > 0 {
+				d.progress += float64(nw)
+			}
+			if ew != nil {
+				err = ew
+				break
+			}
+			if nr != nw {
+				err = io.ErrShortWrite
+				break
+			}
+		}
+		if er != nil {
+			if er != io.EOF {
+				err = er
+			}
+			break
+		}
+	}
+
 	if err != nil {
 		d.err = err
 	}
 
-	d.progress = float64(n)
 	d.finished = true
 }
