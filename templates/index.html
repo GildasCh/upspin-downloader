@@ -1,0 +1,24 @@
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="{{ .baseURL }}/static/style.css">
+    <script src="https://unpkg.com/vue"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue-resource@1.3.4"></script>
+  </head>
+  <body>
+    <div id='app'>
+      <table class='downloadlist'>
+        <tr v-for="download in downloads">
+          <td>[[ download.URL ]]</td>
+          <td>[[ download.Progress ]]</td>
+          <td>[[ download.Finished ]]</td>
+          <td>[[ download.Err ]]</td>
+        </tr>
+      </ul>
+    </div>
+
+    <script>
+      var downloads = {{ .downloads }};
+    </script>
+    <script src='{{ .baseURL }}/static/app.js'></script>
+  </body>
+</html>

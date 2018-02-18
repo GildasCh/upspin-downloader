@@ -22,7 +22,7 @@ type Accesser interface {
 
 func main() {
 	confPathPtr := flag.String("config", "~/upspin/config", "path to the upspin configuration file")
-	// baseURLPtr := flag.String("baseURL", "", "the base URL of the service")
+	baseURLPtr := flag.String("baseURL", "", "the base URL of the service")
 	flag.Parse()
 
 	cfg, err := config.FromFile(*confPathPtr)
@@ -31,7 +31,7 @@ func main() {
 		return
 	}
 
-	// baseURL := *baseURLPtr
+	baseURL := *baseURLPtr
 
 	client := client.New(cfg)
 	if client == nil {
@@ -42,6 +42,16 @@ func main() {
 	downloader := downloader.Downloader{}
 
 	router := gin.Default()
+
+	router.Static("/static", "./static")
+	router.LoadHTMLFiles("templates/index.html")
+
+	router.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "index.html", gin.H{
+			"baseURL":   baseURL,
+			"downloads": downloader.Downloads,
+		})
+	})
 
 	router.POST("/download/*path", func(c *gin.Context) {
 		var url string

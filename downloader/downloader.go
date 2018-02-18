@@ -9,13 +9,13 @@ import (
 )
 
 type Downloader struct {
-	downloads map[string]*download
+	Downloads map[string]*Download
 	sync.Mutex
 }
 
 func (d *Downloader) Add(url string, out io.WriteCloser) (string, bool) {
-	if d.downloads == nil {
-		d.downloads = make(map[string]*download)
+	if d.Downloads == nil {
+		d.Downloads = make(map[string]*Download)
 	}
 
 	d.Lock()
@@ -23,48 +23,48 @@ func (d *Downloader) Add(url string, out io.WriteCloser) (string, bool) {
 
 	ref := fmt.Sprintf("%x", sha1.Sum([]byte(url)))
 
-	if _, ok := d.downloads[ref]; ok {
+	if _, ok := d.Downloads[ref]; ok {
 		return ref, false
 	}
 
-	d.downloads[ref] = &download{url: url}
-	go d.downloads[ref].start(out)
+	d.Downloads[ref] = &Download{URL: url}
+	go d.Downloads[ref].start(out)
 
 	return ref, true
 }
 
 func (d *Downloader) Status(ref string) map[string]string {
-	if dl, ok := d.downloads[ref]; ok {
+	if dl, ok := d.Downloads[ref]; ok {
 		return map[string]string{
-			"URL":      dl.url,
-			"Progress": fmt.Sprintf("%.2f", dl.progress),
-			"Finished": fmt.Sprintf("%v", dl.finished),
-			"Error":    fmt.Sprintf("%v", dl.err),
+			"URL":      dl.URL,
+			"Progress": fmt.Sprintf("%.2f", dl.Progress),
+			"Finished": fmt.Sprintf("%v", dl.Finished),
+			"Error":    fmt.Sprintf("%v", dl.Err),
 		}
 	}
 
-	fmt.Printf("ref %q not found in %#v\n", ref, d.downloads)
+	fmt.Printf("ref %q not found in %#v\n", ref, d.Downloads)
 	return nil
 }
 
-type download struct {
-	url      string
-	progress float64
-	finished bool
-	err      error
+type Download struct {
+	URL      string
+	Progress float64
+	Finished bool
+	Err      error
 }
 
-func (d *download) start(out io.WriteCloser) {
+func (d *Download) start(out io.WriteCloser) {
 	defer out.Close()
 
-	resp, err := http.Get(d.url)
+	resp, err := http.Get(d.URL)
 	if err != nil {
-		d.err = err
+		d.Err = err
 		return
 	}
 	defer resp.Body.Close()
 
-	fmt.Printf("response from get %q: %#v\n", d.url, resp)
+	fmt.Printf("response from get %q: %#v\n", d.URL, resp)
 
 	buf := make([]byte, 32*1024)
 	for {
@@ -72,7 +72,7 @@ func (d *download) start(out io.WriteCloser) {
 		if nr > 0 {
 			nw, ew := out.Write(buf[0:nr])
 			if nw > 0 {
-				d.progress += float64(nw)
+				d.Progress += float64(nw)
 			}
 			if ew != nil {
 				err = ew
@@ -92,8 +92,8 @@ func (d *download) start(out io.WriteCloser) {
 	}
 
 	if err != nil {
-		d.err = err
+		d.Err = err
 	}
 
-	d.finished = true
+	d.Finished = true
 }
