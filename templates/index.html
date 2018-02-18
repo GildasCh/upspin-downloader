@@ -9,7 +9,8 @@
       <table class='downloadlist'>
         <tr v-for="download in downloads">
           <td>[[ download.URL ]]</td>
-          <td>[[ download.Progress ]]</td>
+          <td>[[ download.Destination ]]</td>
+          <td>[[ download.Progress ]] / [[ download.Size]]</td>
           <td>[[ download.Finished ]]</td>
           <td>[[ download.Err ]]</td>
         </tr>

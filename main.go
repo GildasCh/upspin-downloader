@@ -71,7 +71,7 @@ func main() {
 			return
 		}
 
-		ref, _ := downloader.Add(url, w)
+		ref, _ := downloader.Add(url, w, path)
 
 		c.JSON(http.StatusOK, map[string]string{"Reference": ref})
 	})

@@ -13,7 +13,7 @@ type Downloader struct {
 	sync.Mutex
 }
 
-func (d *Downloader) Add(url string, out io.WriteCloser) (string, bool) {
+func (d *Downloader) Add(url string, out io.WriteCloser, dest string) (string, bool) {
 	if d.Downloads == nil {
 		d.Downloads = make(map[string]*Download)
 	}
@@ -27,7 +27,10 @@ func (d *Downloader) Add(url string, out io.WriteCloser) (string, bool) {
 		return ref, false
 	}
 
-	d.Downloads[ref] = &Download{URL: url}
+	d.Downloads[ref] = &Download{
+		URL:         url,
+		Ref:         ref,
+		Destination: dest}
 	go d.Downloads[ref].start(out)
 
 	return ref, true
@@ -49,9 +52,13 @@ func (d *Downloader) Status(ref string) map[string]string {
 
 type Download struct {
 	URL      string
-	Progress float64
+	Size     int64
+	Progress int64
 	Finished bool
 	Err      error
+
+	Ref         string
+	Destination string
 }
 
 func (d *Download) start(out io.WriteCloser) {
@@ -63,6 +70,7 @@ func (d *Download) start(out io.WriteCloser) {
 		return
 	}
 	defer resp.Body.Close()
+	d.Size = resp.ContentLength
 
 	fmt.Printf("response from get %q: %#v\n", d.URL, resp)
 
@@ -72,7 +80,7 @@ func (d *Download) start(out io.WriteCloser) {
 		if nr > 0 {
 			nw, ew := out.Write(buf[0:nr])
 			if nw > 0 {
-				d.Progress += float64(nw)
+				d.Progress += int64(nw)
 			}
 			if ew != nil {
 				err = ew
