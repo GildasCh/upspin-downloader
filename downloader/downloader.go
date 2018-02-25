@@ -38,15 +38,23 @@ func (d *Downloader) Add(url string, out io.WriteCloser, dest string) (string, b
 
 func (d *Downloader) Status(ref string) map[string]string {
 	if dl, ok := d.Downloads[ref]; ok {
+		// read finished first so there cannot be a finished status
+		// with a zero progress
+		finished := dl.Finished
+
+		var progress float64
+		if dl.Size != 0 {
+			progress = float64(dl.Progress) / float64(dl.Size)
+		}
+
 		return map[string]string{
 			"URL":      dl.URL,
-			"Progress": fmt.Sprintf("%.2f", dl.Progress),
-			"Finished": fmt.Sprintf("%v", dl.Finished),
+			"Progress": fmt.Sprintf("%.2f", progress),
+			"Finished": fmt.Sprintf("%v", finished),
 			"Error":    fmt.Sprintf("%v", dl.Err),
 		}
 	}
 
-	fmt.Printf("ref %q not found in %#v\n", ref, d.Downloads)
 	return nil
 }
 
@@ -71,8 +79,6 @@ func (d *Download) start(out io.WriteCloser) {
 	}
 	defer resp.Body.Close()
 	d.Size = resp.ContentLength
-
-	fmt.Printf("response from get %q: %#v\n", d.URL, resp)
 
 	buf := make([]byte, 32*1024)
 	for {
